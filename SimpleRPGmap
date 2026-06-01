@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+<title>Dungeon Map Editor</title>
+
+<style>
+  body { margin:0; background:#111; color:white; font-family:sans-serif; }
+  canvas { touch-action:none; display:block; margin:auto; background:#1a1a1a; }
+  .bar {
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    padding:10px;
+  }
+  button {
+    padding:12px;
+    font-size:14px;
+    background:#222;
+    color:white;
+    border:1px solid #444;
+    border-radius:10px;
+  }
+  button.active { background:#444; }
+</style>
+</head>
+
+<body>
+
+<div class="bar">
+  <button onclick="setTool('wall')">Wall</button>
+  <button onclick="setTool('floor')">Floor</button>
+  <button onclick="setTool('door')">Door</button>
+  <button onclick="setTool('water')">Water</button>
+  <button onclick="exportPNG()">Export</button>
+</div>
+
+<canvas id="c"></canvas>
+
+<script>
+const W = 40;
+const H = 30;
+const TILE = 20;
+
+const canvas = document.getElementById("c");
+const ctx = canvas.getContext("2d");
+
+canvas.width = W * TILE;
+canvas.height = H * TILE;
+
+let tool = "wall";
+
+function emptyGrid(){
+  return Array.from({length:H},()=>Array.from({length:W},()=>"floor"));
+}
+let grid = emptyGrid();
+
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  for(let y=0;y<H;y++){
+    for(let x=0;x<W;x++){
+      const t = grid[y][x];
+
+      if(t==="floor") ctx.fillStyle="#e9e6df";
+      if(t==="wall") ctx.fillStyle="#2a2a2a";
+      if(t==="door") ctx.fillStyle="#7a4a2a";
+      if(t==="water") ctx.fillStyle="#2a4f7a";
+
+      ctx.fillRect(x*TILE,y*TILE,TILE,TILE);
+
+      ctx.strokeStyle="rgba(0,0,0,0.1)";
+      ctx.strokeRect(x*TILE,y*TILE,TILE,TILE);
+    }
+  }
+}
+
+function getCell(e){
+  const r = canvas.getBoundingClientRect();
+  const x = e.touches ? e.touches[0].clientX : e.clientX;
+  const y = e.touches ? e.touches[0].clientY : e.clientY;
+
+  return {
+    x: Math.floor((x - r.left) / TILE),
+    y: Math.floor((y - r.top) / TILE)
+  };
+}
+
+let drawing=false;
+
+canvas.addEventListener("pointerdown", e=>{
+  drawing=true;
+  const c=getCell(e);
+  grid[c.y][c.x]=tool;
+  draw();
+});
+
+canvas.addEventListener("pointermove", e=>{
+  if(!drawing) return;
+  const c=getCell(e);
+  if(grid[c.y]) grid[c.y][c.x]=tool;
+  draw();
+});
+
+canvas.addEventListener("pointerup", ()=>drawing=false);
+
+function setTool(t){ tool=t; }
+
+function exportPNG(){
+  const a=document.createElement("a");
+  a.href=canvas.toDataURL("image/png");
+  a.download="dungeon.png";
+  a.click();
+}
+
+draw();
+</script>
+
+</body>
+</html>
